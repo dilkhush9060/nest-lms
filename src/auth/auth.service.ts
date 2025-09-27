@@ -1,0 +1,166 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+
+import { UserService } from 'src/user/user.service';
+import { SignUpDto } from './dto/SignUp.dto';
+import { JwtService } from '@nestjs/jwt';
+import { Constants } from './constants';
+import { SignInDto } from './dto/SignIn.dto';
+import otpGenerator from 'otp-generator';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly userService: UserService,
+    private jwtService: JwtService,
+  ) {}
+
+  async SignUp(signUpDto: SignUpDto) {
+    // check if user with the email already exists
+    const existingUser = await this.userService.findByEmail(signUpDto.email);
+
+    if (existingUser) {
+      throw new ConflictException('Email already exists');
+    }
+
+    const saltRounds = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(signUpDto.password, saltRounds);
+    signUpDto.password = hashedPassword;
+
+    // create the user
+    const user = await this.userService.createUser(signUpDto);
+
+    // just a safety check
+    if (!user) {
+      throw new BadRequestException('Error creating user');
+    }
+
+    const token = this.jwtService.sign(
+      { id: user._id, email: user.email },
+      {
+        secret: Constants.JWT_TOKEN_SECRET,
+        expiresIn: Constants.JWT_TOKEN_EXPIRATION,
+      },
+    );
+
+    return {
+      user,
+      token,
+    };
+  }
+
+  async sendOtpEmail(email: string) {
+    const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+      digits: true,
+    });
+
+    const token = this.jwtService.sign(
+      { id: user._id, email: user.email },
+      {
+        secret: Constants.JWT_TOKEN_SECRET,
+        expiresIn: Constants.JWT_TOKEN_EXPIRATION,
+      },
+    );
+
+    user.otp = otp;
+    user.token = token;
+
+    await user.save();
+
+    return {
+      token,
+    };
+  }
+
+  async verifyEmail(token: string, tokenData: { id: string }, otp: string) {
+    const user = await this.userService.findById(tokenData.id);
+
+    if (!user || user.token != token) {
+      throw new BadRequestException('Invalid token');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    if (user.otp != otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    user.isVerified = true;
+    user.otp = '';
+    user.token = '';
+    await user.save();
+
+    return {
+      message: 'Email verified successfully',
+    };
+  }
+
+  async SignIn(signInDto: SignInDto) {
+    // check if user with the email exists
+    const user = await this.userService.findByEmail(signInDto.email);
+
+    if (!user) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    // check user verified
+    if (!user.isVerified) {
+      throw new BadRequestException('Please verify your email to continue');
+    }
+
+    // compare the password
+    const isPasswordValid = await bcrypt.compare(
+      signInDto.password,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    const accessToken = this.jwtService.sign(
+      { id: user._id, email: user.email, name: user.name, role: user.role },
+      {
+        secret: Constants.JWT_ACCESS_TOKEN_SECRET,
+        expiresIn: Constants.JWT_ACCESS_TOKEN_EXPIRATION,
+      },
+    );
+
+    const refreshToken = this.jwtService.sign(
+      { id: user._id },
+      {
+        secret: Constants.JWT_REFRESH_TOKEN_SECRET,
+        expiresIn: Constants.JWT_REFRESH_TOKEN_EXPIRATION,
+      },
+    );
+
+    user.token = refreshToken;
+    await user.save();
+
+    return {
+      user,
+      accessToken,
+      refreshToken,
+    };
+  }
+}
