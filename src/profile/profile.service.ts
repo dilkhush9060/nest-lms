@@ -5,7 +5,7 @@ import { UserService } from 'src/user/user.service';
 export class ProfileService {
   constructor(private readonly userService: UserService) {}
 
-  async getProfile(userId: string) {
+  async get(userId: string) {
     const user = await this.userService.findById(userId);
     return user;
   }

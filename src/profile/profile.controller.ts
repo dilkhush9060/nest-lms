@@ -29,13 +29,13 @@ export class ProfileController {
   })
   @UseGuards(AuthGuard)
   @Get('/')
-  async getProfile(@Request() request: express.Request) {
+  async get(@Request() request: express.Request) {
     const userId = request['user']?.id;
 
     if (!userId) {
       throw new UnauthorizedException('User not authenticated');
     }
-    const result = await this.profileService.getProfile(userId);
+    const result = await this.profileService.get(userId);
 
     if (!result) {
       throw new NotFoundException('Profile not found');
