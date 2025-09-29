@@ -23,10 +23,11 @@ async function bootstrap() {
     .setDescription('The LMS API description')
     .setVersion('1.0')
     .addBearerAuth()
+    .addServer('http://localhost:5000', 'Local server')
+    .addServer('https://lms.example.com', 'Production server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
 
   app.use(
     '/reference',

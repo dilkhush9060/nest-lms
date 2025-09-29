@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-
-import { User } from './schemas/user.schema';
-import { SignUpDto } from 'src/auth/dto/SignUp.dto';
+import { Model, Types } from 'mongoose';
+import { User } from './user.schema';
+import { SignUpDto } from 'src/auth/auth.dto';
 
 @Injectable()
 export class UserService {
@@ -31,11 +30,11 @@ export class UserService {
   }
 
   async findById(id: string) {
-    return this.userModel.findById(id);
+    return this.userModel.findById(new Types.ObjectId(id));
   }
 
   async getAllUsers() {
-    return this.userModel.find().select('-password');
+    return this.userModel.find({ role: 'student' }).select('-password');
   }
 
   async updateUser(id: string, updateData: Partial<User>) {

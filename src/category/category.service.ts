@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Category } from './schemas/category.schema';
-import { CategoryDto } from './dto/category.dto';
+import { Category } from './category.schema';
+import { CategoryDto } from './category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -59,7 +59,7 @@ export class CategoryService {
 
   // get All
   async getAll() {
-    const categories = await this.categoryModel.find({});
+    const categories = await this.categoryModel.find({}).populate('courses');
 
     if (categories.length === 0) {
       throw new NotFoundException('Categories not found');
@@ -95,11 +95,9 @@ export class CategoryService {
       throw new NotFoundException('Category not found');
     }
 
-    const result = await this.categoryModel.findOneAndDelete({
+    await this.categoryModel.findOneAndDelete({
       _id: category._id,
     });
-
-    console.log(result);
 
     return true;
   }

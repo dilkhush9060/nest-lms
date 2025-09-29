@@ -22,16 +22,20 @@ import {
   GetCategoriesResponseDto,
   GetCategoryResponseDto,
   UpdateCategoryResponseDto,
-} from './dto/category.dto';
-import { BadRequestDto, NotFoundDto } from 'src/common/dto/response.dto';
+} from './category.dto';
+import {
+  BadRequestDto,
+  ForbiddenDto,
+  NotFoundDto,
+  UnauthorizedDto,
+} from 'src/common/dto/response.dto';
 import { CategoryService } from './category.service';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { RolesGuard } from 'src/auth/guards/role.guard';
 import { Roles } from 'src/auth/role.decorator';
 import { Role } from 'src/user/user.types';
+import { AuthGuard, RolesGuard } from 'src/auth/auth.guard';
 
 @ApiTags('Category')
-@Controller('category')
+@Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
@@ -40,6 +44,8 @@ export class CategoryController {
   @ApiBearerAuth()
   @ApiResponse({ status: 201, type: CreateCategoryResponseDto })
   @ApiResponse({ status: 400, type: BadRequestDto })
+  @ApiResponse({ status: 401, type: UnauthorizedDto })
+  @ApiResponse({ status: 403, type: ForbiddenDto })
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Post('/')
@@ -96,7 +102,9 @@ export class CategoryController {
   @ApiOperation({ summary: 'Update category by slug' })
   @ApiBearerAuth()
   @ApiResponse({ status: 201, type: UpdateCategoryResponseDto })
-  @ApiResponse({ status: 404, type: NotFoundDto })
+  @ApiResponse({ status: 400, type: BadRequestDto })
+  @ApiResponse({ status: 401, type: UnauthorizedDto })
+  @ApiResponse({ status: 403, type: ForbiddenDto })
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Patch('/:slug')
@@ -116,7 +124,9 @@ export class CategoryController {
   @ApiOperation({ summary: 'Delete category by slug' })
   @ApiBearerAuth()
   @ApiResponse({ status: 200, type: DeleteCategoryResponseDto })
-  @ApiResponse({ status: 404, type: NotFoundDto })
+  @ApiResponse({ status: 400, type: BadRequestDto })
+  @ApiResponse({ status: 401, type: UnauthorizedDto })
+  @ApiResponse({ status: 403, type: ForbiddenDto })
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Delete('/:slug')

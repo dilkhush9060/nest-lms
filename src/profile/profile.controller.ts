@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
   NotFoundException,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { AuthGuard } from 'src/auth/auth.guard';
 import { ProfileService } from './profile.service';
 import {
   ApiBearerAuth,

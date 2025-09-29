@@ -5,13 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import otpGenerator from 'otp-generator';
 
 import { UserService } from 'src/user/user.service';
-import { SignUpDto } from './dto/SignUp.dto';
-import { JwtService } from '@nestjs/jwt';
 import { Constants } from './constants';
-import { SignInDto } from './dto/SignIn.dto';
-import otpGenerator from 'otp-generator';
+import { SignInDto, SignUpDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -162,5 +161,53 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async refreshToken(token: string, userId: string) {
+    const user = await this.userService.findById(userId);
+
+    console.log(token, user?.token);
+
+    if (!user || user.token != token) {
+      throw new BadRequestException('Invalid token');
+    }
+
+    const newAccessToken = this.jwtService.sign(
+      { id: user._id, email: user.email, name: user.name, role: user.role },
+      {
+        secret: Constants.JWT_ACCESS_TOKEN_SECRET,
+        expiresIn: Constants.JWT_ACCESS_TOKEN_EXPIRATION,
+      },
+    );
+
+    const newRefreshToken = this.jwtService.sign(
+      { id: user._id },
+      {
+        secret: Constants.JWT_REFRESH_TOKEN_SECRET,
+        expiresIn: Constants.JWT_REFRESH_TOKEN_EXPIRATION,
+      },
+    );
+
+    user.token = newRefreshToken;
+    await user.save();
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
+  }
+
+  async signOut(userId: string | undefined) {
+    if (userId) {
+      const user = await this.userService.findById(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      user.token = '';
+      await user.save();
+    }
+
+    return true;
   }
 }

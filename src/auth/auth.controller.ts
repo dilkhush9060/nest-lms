@@ -7,15 +7,11 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { SignUpDto, SignUpResponseDto } from './dto/SignUp.dto';
-import { SignInDto, SignInResponseDto } from './dto/SignIn.dto';
 
+import { AuthService } from './auth.service';
 import * as express from 'express';
 import { Constants } from './constants';
-import { SendOtpDto, SendOtpResponseDto } from './dto/SendOtp.dto';
-import { VerifyEmailDto, VerifyEmailResponseDto } from './dto/VerifyEmail.dto';
-import { TokenGuard } from './guards/token.guard';
+
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -27,6 +23,17 @@ import {
   NotFoundDto,
   UnauthorizedDto,
 } from 'src/common/dto/response.dto';
+import {
+  SendOtpDto,
+  SendOtpResponseDto,
+  SignInDto,
+  SignInResponseDto,
+  SignUpDto,
+  SignUpResponseDto,
+  VerifyEmailDto,
+  VerifyEmailResponseDto,
+} from './auth.dto';
+import { RefreshGuard, TokenGuard } from './auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -55,6 +62,7 @@ export class AuthController {
       secure: Constants.COOKIE_SECURE,
       maxAge: Constants.COOKIE_MAX_AGE,
       sameSite: Constants.COOKIE_SAME_SITE,
+      domain: Constants.COOKIE_DOMAIN,
     });
     return {
       statusCode: 201,
@@ -172,6 +180,7 @@ export class AuthController {
       secure: Constants.COOKIE_SECURE,
       sameSite: Constants.COOKIE_SAME_SITE,
       maxAge: Constants.COOKIE_MAX_AGE,
+      domain: Constants.COOKIE_DOMAIN,
     });
 
     res.cookie('refreshToken', result.refreshToken, {
@@ -179,6 +188,7 @@ export class AuthController {
       secure: Constants.COOKIE_SECURE,
       sameSite: Constants.COOKIE_SAME_SITE,
       maxAge: Constants.COOKIE_MAX_AGE * 7,
+      domain: Constants.COOKIE_DOMAIN,
     });
 
     return {
@@ -194,6 +204,98 @@ export class AuthController {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       },
+    };
+  }
+
+  // refresh token
+  @ApiOperation({ summary: 'Refresh Access Token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Access token refreshed successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    type: UnauthorizedDto,
+  })
+  @ApiResponse({
+    status: 400,
+    type: BadRequestDto,
+  })
+  @UseGuards(RefreshGuard)
+  @Post('refresh')
+  async refreshToken(
+    @Req() req: express.Request,
+    @Res({ passthrough: true }) res: express.Response,
+  ) {
+    const token = req.token;
+    const tokenData = req.tokenData as { id: string };
+
+    if (!token || !tokenData) {
+      throw new UnauthorizedException('Invalid or missing token');
+    }
+
+    const result = await this.authService.refreshToken(token, tokenData.id);
+
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+      maxAge: Constants.COOKIE_MAX_AGE,
+      domain: Constants.COOKIE_DOMAIN,
+    });
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+      maxAge: Constants.COOKIE_MAX_AGE * 7,
+      domain: Constants.COOKIE_DOMAIN,
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Access token refreshed successfully',
+      data: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      },
+    };
+  }
+
+  // sign out
+  @ApiOperation({ summary: 'User Sign Out' })
+  @ApiResponse({
+    status: 200,
+    description: 'User signed out successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    type: BadRequestDto,
+  })
+  @Post('signout')
+  @UseGuards(TokenGuard)
+  async signOut(
+    @Req() req: express.Request,
+    @Res({ passthrough: true }) res: express.Response,
+  ) {
+    const userId = req.user?.id;
+
+    await this.authService.signOut(userId);
+    res.clearCookie('accessToken', {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+      domain: Constants.COOKIE_DOMAIN,
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+      domain: Constants.COOKIE_DOMAIN,
+    });
+    return {
+      statusCode: 200,
+      message: 'User signed out successfully',
     };
   }
 }
