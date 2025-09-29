@@ -26,6 +26,9 @@ export class User {
 
   @Prop({ default: null })
   otp: string;
+
+  @Prop({ default: null })
+  picture: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

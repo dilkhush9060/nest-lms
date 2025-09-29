@@ -35,6 +35,9 @@ export class Course {
     ref: User.name,
   })
   author: User;
+
+  @Prop({ default: null })
+  image: string;
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);
