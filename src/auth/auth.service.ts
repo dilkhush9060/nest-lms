@@ -11,12 +11,18 @@ import otpGenerator from 'otp-generator';
 import { UserService } from 'src/user/user.service';
 import { Constants } from './constants';
 import { SignInDto, SignUpDto } from './auth.dto';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
+  private JWT_TOKEN_SECRET = process.env.JWT_TOKEN_SECRET || '';
+  private JWT_ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_TOKEN_SECRET || '';
+  private JWT_REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_TOKEN_SECRET || '';
+
   constructor(
     private readonly userService: UserService,
     private jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async SignUp(signUpDto: SignUpDto) {
@@ -42,10 +48,22 @@ export class AuthService {
     const token = this.jwtService.sign(
       { id: user._id, email: user.email },
       {
-        secret: Constants.JWT_TOKEN_SECRET,
+        secret: this.JWT_TOKEN_SECRET,
         expiresIn: Constants.JWT_TOKEN_EXPIRATION,
       },
     );
+
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+      digits: true,
+    });
+
+    await this.userService.updateByEmail(user.email, { otp, token });
+
+    //Todo: send email
+    await this.emailService.sendOtpToVerification(user.name, user.email, otp);
 
     return {
       user,
@@ -74,7 +92,7 @@ export class AuthService {
     const token = this.jwtService.sign(
       { id: user._id, email: user.email },
       {
-        secret: Constants.JWT_TOKEN_SECRET,
+        secret: this.JWT_TOKEN_SECRET,
         expiresIn: Constants.JWT_TOKEN_EXPIRATION,
       },
     );
@@ -83,6 +101,9 @@ export class AuthService {
     user.token = token;
 
     await user.save();
+
+    //Todo: send email
+    await this.emailService.sendOtpToVerification(user.name, user.email, otp);
 
     return {
       token,
@@ -140,7 +161,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       { id: user._id, email: user.email, name: user.name, role: user.role },
       {
-        secret: Constants.JWT_ACCESS_TOKEN_SECRET,
+        secret: this.JWT_ACCESS_TOKEN_SECRET,
         expiresIn: Constants.JWT_ACCESS_TOKEN_EXPIRATION,
       },
     );
@@ -148,7 +169,7 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(
       { id: user._id },
       {
-        secret: Constants.JWT_REFRESH_TOKEN_SECRET,
+        secret: this.JWT_REFRESH_TOKEN_SECRET,
         expiresIn: Constants.JWT_REFRESH_TOKEN_EXPIRATION,
       },
     );
@@ -175,7 +196,7 @@ export class AuthService {
     const newAccessToken = this.jwtService.sign(
       { id: user._id, email: user.email, name: user.name, role: user.role },
       {
-        secret: Constants.JWT_ACCESS_TOKEN_SECRET,
+        secret: this.JWT_ACCESS_TOKEN_SECRET,
         expiresIn: Constants.JWT_ACCESS_TOKEN_EXPIRATION,
       },
     );
@@ -183,7 +204,7 @@ export class AuthService {
     const newRefreshToken = this.jwtService.sign(
       { id: user._id },
       {
-        secret: Constants.JWT_REFRESH_TOKEN_SECRET,
+        secret: this.JWT_REFRESH_TOKEN_SECRET,
         expiresIn: Constants.JWT_REFRESH_TOKEN_EXPIRATION,
       },
     );

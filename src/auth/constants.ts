@@ -1,7 +1,4 @@
 export const Constants = {
-  JWT_TOKEN_SECRET: 'your_jwt_secret_key',
-  JWT_REFRESH_TOKEN_SECRET: 'your_refresh_token_secret_key',
-  JWT_ACCESS_TOKEN_SECRET: 'your_access_token_secret_key',
   JWT_TOKEN_EXPIRATION: '1h',
   JWT_ACCESS_TOKEN_EXPIRATION: '1m',
   JWT_REFRESH_TOKEN_EXPIRATION: '7d',

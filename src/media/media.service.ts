@@ -5,27 +5,29 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BadGatewayException, Injectable } from '@nestjs/common';
-import { Constants } from './constants';
 
 @Injectable()
 export class MediaService {
   private s3Client: S3Client;
+  private bucketName: string;
 
   constructor() {
     this.s3Client = new S3Client({
-      region: Constants.AWS_S3_REGION,
-      endpoint: Constants.AWS_S3_ENDPOINT,
+      region: process.env.AWS_S3_REGION as string,
+      endpoint: process.env.AWS_S3_ENDPOINT as string,
       credentials: {
-        accessKeyId: Constants.AWS_S3_ACCESS_KEY_ID,
-        secretAccessKey: Constants.AWS_S3_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY as string,
       },
     });
+
+    this.bucketName = process.env.S3_BUCKET_NAME as string;
   }
 
   // get presigned url for upload
   async getPresignedUrl(data: { folder: string; Key: string }) {
     const params = {
-      Bucket: Constants.S3_BUCKET_NAME,
+      Bucket: this.bucketName,
       Key: `${data.folder}/${data.Key}`,
     };
 
@@ -46,7 +48,7 @@ export class MediaService {
   // delete object from s3 bucket
   async deleteObject(key: string) {
     const params = {
-      Bucket: Constants.S3_BUCKET_NAME,
+      Bucket: this.bucketName,
       Key: key,
     };
 

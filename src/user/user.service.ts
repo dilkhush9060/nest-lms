@@ -43,6 +43,12 @@ export class UserService {
       .select('-password');
   }
 
+  async updateByEmail(email: string, updateData: Partial<User>) {
+    return this.userModel
+      .findOneAndUpdate({ email: email }, updateData, { new: true })
+      .select('-password');
+  }
+
   async deleteUser(id: string) {
     return this.userModel.findByIdAndDelete(id);
   }

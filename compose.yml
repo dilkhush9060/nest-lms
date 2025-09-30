@@ -1,11 +1,26 @@
 services:
   mongodb:
-    image: mongo
+    image: mongo:latest
     container_name: mongodb_lms
     ports:
-      - 27017:27017
+      - "27017:27017"
     volumes:
-      - mongo-data:/data/db
+      - lms_data:/data/db
+
+  redis:
+    image: redis:alpine
+    container_name: redis_lms
+    ports:
+      - "6379:6379"
+    volumes:
+      - lms_data:/data
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog_lms
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI
 
 volumes:
-  mongo-data:
+  lms_data:

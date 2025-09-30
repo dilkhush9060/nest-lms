@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { Constants } from './constants';
+
 import { TokenExtractor } from './extractor';
 import { Reflector } from '@nestjs/core';
 import { Role } from 'src/user/user.types';
@@ -14,6 +14,8 @@ import { ROLES_KEY } from './role.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private JWT_ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_TOKEN_SECRET || '';
+
   constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,7 +28,7 @@ export class AuthGuard implements CanActivate {
 
     try {
       const payload: Express.User = await this.jwtService.verifyAsync(token, {
-        secret: Constants.JWT_ACCESS_TOKEN_SECRET,
+        secret: this.JWT_ACCESS_TOKEN_SECRET,
       });
 
       request['user'] = payload;
@@ -39,6 +41,8 @@ export class AuthGuard implements CanActivate {
 
 @Injectable()
 export class RefreshGuard implements CanActivate {
+  private JWT_REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_TOKEN_SECRET || '';
+
   constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -53,7 +57,7 @@ export class RefreshGuard implements CanActivate {
       const payload: {
         id: string;
       } = await this.jwtService.verifyAsync(token, {
-        secret: Constants.JWT_REFRESH_TOKEN_SECRET,
+        secret: this.JWT_REFRESH_TOKEN_SECRET,
       });
 
       request['token'] = token;
@@ -89,6 +93,8 @@ export class RolesGuard implements CanActivate {
 
 @Injectable()
 export class TokenGuard implements CanActivate {
+  private JWT_TOKEN_SECRET = process.env.JWT_TOKEN_SECRET || '';
+
   constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -103,7 +109,7 @@ export class TokenGuard implements CanActivate {
       const payload: {
         id: string;
       } = await this.jwtService.verifyAsync(token, {
-        secret: Constants.JWT_TOKEN_SECRET,
+        secret: this.JWT_TOKEN_SECRET,
       });
 
       request['token'] = token;
