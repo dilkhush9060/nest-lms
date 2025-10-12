@@ -78,4 +78,46 @@ export class CourseService {
       course,
     };
   }
+
+  // update course
+  async update(slug: string, courseData: Partial<Course>) {
+    const course = await this.courseModel.findOne({ slug });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    // update logic here
+    const updatedCourse = await this.courseModel
+      .findOneAndUpdate(
+        {
+          slug,
+        },
+        {
+          ...courseData,
+        },
+        { new: true },
+      )
+      .populate('category', 'name');
+
+    return {
+      updatedCourse,
+    };
+  }
+
+  // delete course
+  async delete(slug: string) {
+    const course = await this.courseModel.findOne({ slug });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    // delete the course
+    await this.courseModel.deleteOne({ slug });
+
+    return {
+      course,
+    };
+  }
 }

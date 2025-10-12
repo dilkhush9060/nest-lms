@@ -59,7 +59,7 @@ export class CategoryService {
 
   // get All
   async getAll() {
-    const categories = await this.categoryModel.find({}).populate('courses');
+    const categories = await this.categoryModel.find({});
 
     if (categories.length === 0) {
       throw new NotFoundException('Categories not found');

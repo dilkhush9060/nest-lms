@@ -1,9 +1,12 @@
 import * as express from 'express';
+import { Types } from 'mongoose';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Request,
   UnauthorizedException,
@@ -25,8 +28,11 @@ import {
 import {
   CourseDto,
   CourseResponseDto,
+  DeleteCourseResponseDto,
   GetAllCourseResponseDto,
   GetBySlugCourseResponseDto,
+  UpdateCourseDto,
+  UpdateCourseResponseDto,
 } from './course.dto';
 import { AuthGuard, RolesGuard } from 'src/auth/auth.guard';
 import { Roles } from 'src/auth/role.decorator';
@@ -69,7 +75,7 @@ export class CourseController {
   }
 
   // get courses
-  @ApiOperation({ summary: 'Get All Courses' })
+  @ApiOperation({ summary: 'Get all courses' })
   @ApiResponse({ status: 200, type: GetAllCourseResponseDto })
   @ApiResponse({ status: 404, type: NotFoundDto })
   @Get('/')
@@ -86,7 +92,7 @@ export class CourseController {
   }
 
   // get courses
-  @ApiOperation({ summary: 'Get All Courses' })
+  @ApiOperation({ summary: 'Get course by slug' })
   @ApiResponse({ status: 200, type: GetBySlugCourseResponseDto })
   @ApiResponse({ status: 404, type: NotFoundDto })
   @Get('/:slug')
@@ -96,6 +102,61 @@ export class CourseController {
     return {
       statusCode: 200,
       message: 'Course fetched successful',
+      data: {
+        course: result.course,
+      },
+    };
+  }
+
+  // update course
+  @ApiOperation({ summary: 'Update a course by slug' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, type: UpdateCourseResponseDto })
+  @ApiResponse({ status: 400, type: BadRequestDto })
+  @ApiResponse({ status: 401, type: UnauthorizedDto })
+  @ApiResponse({ status: 403, type: ForbiddenDto })
+  @ApiResponse({ status: 404, type: NotFoundDto })
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @Patch('/:slug')
+  async update(
+    @Param('slug') slug: string,
+    @Body() courseDto: UpdateCourseDto,
+  ) {
+    const updateData = {
+      ...courseDto,
+      category: courseDto.category
+        ? new Types.ObjectId(courseDto.category)
+        : undefined,
+    };
+    const result = await this.courseService.update(slug, updateData);
+
+    return {
+      statusCode: 200,
+      message: 'Course updated successful',
+      data: {
+        course: result.updatedCourse,
+      },
+    };
+  }
+
+  // delete course
+  @ApiOperation({ summary: 'Delete a course by slug' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, type: DeleteCourseResponseDto })
+  @ApiResponse({ status: 400, type: BadRequestDto })
+  @ApiResponse({ status: 401, type: UnauthorizedDto })
+  @ApiResponse({ status: 403, type: ForbiddenDto })
+  @ApiResponse({ status: 404, type: NotFoundDto })
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @Delete('/:slug')
+  async delete(@Param('slug') slug: string) {
+    const result = await this.courseService.delete(slug);
+
+    return {
+      statusCode: 200,
+      message: 'Course deleted successful',
       data: {
         course: result.course,
       },

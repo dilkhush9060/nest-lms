@@ -41,3 +41,14 @@ export class Course {
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);
+
+CourseSchema.pre(
+  'deleteOne',
+  { document: true, query: false },
+  async function (next) {
+    const courseId = this._id;
+    const ModuleModel = this.model('Module');
+    await ModuleModel.deleteMany({ course: courseId });
+    next();
+  },
+);
