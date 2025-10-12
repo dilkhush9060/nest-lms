@@ -10,9 +10,6 @@ export class Module {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, trim: true, lowercase: true, unique: true })
-  slug: string;
-
   @Prop({ required: true })
   desc: string;
 

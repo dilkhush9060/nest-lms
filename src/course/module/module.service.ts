@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Module } from './module.schema';
 import { Model, Types } from 'mongoose';
 import { CreateModuleDto } from './module.dto';
-import { generateSlug } from 'src/common/utils/slug.utils';
 import { Course } from '../course.schema';
 
 @Injectable()
@@ -16,20 +15,19 @@ export class ModuleService {
   ) {}
 
   // create module
-  async createModule(createModuleDto: CreateModuleDto) {
-    const slug = generateSlug(createModuleDto.name);
+  async createModule(courseId: string, createModuleDto: CreateModuleDto) {
+    const course = await this.courseModel.findById(
+      new Types.ObjectId(courseId),
+    );
 
-    const module = await this.moduleModel.findOne({ slug });
-
-    if (module) {
-      throw new BadRequestException('Module already exists');
+    if (!course) {
+      throw new BadRequestException('Course not found');
     }
 
     const newModule = await this.moduleModel.create({
       name: createModuleDto.name,
-      slug: slug,
       desc: createModuleDto.desc,
-      course: createModuleDto.course,
+      course: course._id,
     });
 
     if (!newModule) {
@@ -37,10 +35,7 @@ export class ModuleService {
     }
 
     // push module to course
-    const course = await this.courseModel.findById(createModuleDto.course);
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
+
     course.modules.push(newModule._id);
     await course.save();
 
@@ -50,12 +45,12 @@ export class ModuleService {
   }
 
   // get all modules
-  async getAllModules(courseId) {
+  async getAllModules(courseId: string) {
     const modules = await this.moduleModel
       .find({
         course: courseId,
       })
-      .populate('lessons')
+      .populate('lessons', '-module')
       .exec();
 
     if (modules.length === 0) {
@@ -65,13 +60,13 @@ export class ModuleService {
     return { modules };
   }
 
-  // get module by slug
+  // get module by id
   async getModuleById(id: string) {
     const module = await this.moduleModel
       .findOne({
         _id: new Types.ObjectId(id),
       })
-      .populate('lessons')
+      .populate('lessons', '-module')
       .exec();
 
     if (!module) {
@@ -90,20 +85,7 @@ export class ModuleService {
       throw new BadRequestException('Module not found');
     }
 
-    const newSlug = generateSlug(createModuleDto.name);
-
-    // check if new slug already exists
-    const moduleWithNewSlug = await this.moduleModel.findOne({ slug: newSlug });
-
-    if (
-      moduleWithNewSlug &&
-      moduleWithNewSlug._id.toString() !== module._id.toString()
-    ) {
-      throw new BadRequestException('Module with this name already exists');
-    }
-
     module.name = createModuleDto.name;
-    module.slug = newSlug;
     module.desc = createModuleDto.desc;
 
     const updatedModule = await module.save();

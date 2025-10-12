@@ -45,8 +45,14 @@ export class ModuleController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Post()
-  async createModule(@Body() createModuleDto: CreateModuleDto) {
-    const result = await this.moduleService.createModule(createModuleDto);
+  async createModule(
+    @Body() createModuleDto: CreateModuleDto,
+    @Param('courseId') courseId: string,
+  ) {
+    const result = await this.moduleService.createModule(
+      courseId,
+      createModuleDto,
+    );
     return {
       statusCode: 201,
       message: 'Module created successfully',

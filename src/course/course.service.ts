@@ -68,7 +68,7 @@ export class CourseService {
         .populate('author', 'name picture')
         .populate({
           path: 'modules',
-          populate: { path: 'lessons' },
+          populate: { path: 'lessons', select: '-module' },
         }),
       this.courseModel.countDocuments(),
     ]);
@@ -94,7 +94,7 @@ export class CourseService {
       .populate('author', 'name picture')
       .populate({
         path: 'modules',
-        populate: { path: 'lessons' },
+        populate: { path: 'lessons', select: '-module' },
       });
 
     if (!course) {

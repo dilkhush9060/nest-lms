@@ -9,10 +9,6 @@ export class CreateModuleDto {
   @ApiProperty({ example: 'module description' })
   @IsString()
   desc: string;
-
-  @ApiProperty({ example: '68d9136b69186756756dac1c' })
-  @IsString()
-  course: string;
 }
 
 export class CreateModuleResponseDto {
@@ -25,7 +21,6 @@ export class CreateModuleResponseDto {
   @ApiProperty({
     example: {
       name: 'Module 1',
-      slug: 'module-1',
       desc: 'module description',
       course: '68d9136b69186756756dac1c',
       lessons: [],
@@ -54,7 +49,6 @@ export class GetAllModulesResponseDto {
       modules: [
         {
           name: 'Module 1',
-          slug: 'module-1',
           desc: 'module description',
           course: '68d9136b69186756756dac1c',
           lessons: [],
@@ -86,14 +80,12 @@ export class GetModuleResponseDto {
     example: {
       module: {
         name: 'Module 1',
-        slug: 'module-1',
         desc: 'module description',
         course: '68d9136b69186756756dac1c',
         lessons: [
           {
             _id: '68d9136b69186756756dac1c',
             name: 'Lesson 1',
-            slug: 'lesson-1',
             content: 'lesson content',
             module: '68d9136b69186756756dac1c',
             createdAt: '2023-12-10T10:00:00.000Z',
@@ -126,7 +118,6 @@ export class UpdateModuleResponseDto {
   @ApiProperty({
     example: {
       name: 'Updated Module Name',
-      slug: 'updated-module-name',
       desc: 'Updated module description',
       course: '68d9136b69186756756dac1c',
       lessons: [],
