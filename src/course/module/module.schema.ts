@@ -13,17 +13,14 @@ export class Module {
   @Prop({ required: true, trim: true, lowercase: true, unique: true })
   slug: string;
 
+  @Prop({ required: true })
+  desc: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Course', required: true })
   course: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Lesson' }], default: [] })
   lessons: Types.ObjectId[];
-
-  @Prop({ type: Date })
-  createdAt?: Date;
-
-  @Prop({ type: Date })
-  updatedAt?: Date;
 }
 
 export const ModuleSchema = SchemaFactory.createForClass(Module);

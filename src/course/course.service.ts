@@ -6,7 +6,6 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Course } from './course.schema';
 import { Model } from 'mongoose';
-import { ModuleService } from './module/module.service';
 import { CourseDto } from './course.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { FilterDto } from 'src/common/dto/filter.dto';
@@ -18,7 +17,6 @@ export class CourseService {
   constructor(
     @InjectModel(Course.name)
     private courseModel: Model<Course>,
-    private readonly moduleService: ModuleService,
   ) {}
 
   // create a new course
@@ -67,7 +65,11 @@ export class CourseService {
         .limit(limit)
         .sort({ createdAt: -1 })
         .populate('author', 'name picture')
-        .populate('category', 'name'),
+        .populate('author', 'name picture')
+        .populate({
+          path: 'modules',
+          populate: { path: 'lessons' },
+        }),
       this.courseModel.countDocuments(),
     ]);
 
@@ -89,7 +91,11 @@ export class CourseService {
     const course = await this.courseModel
       .findOne({ slug })
       .populate('author', 'name picture')
-      .populate('category', 'name');
+      .populate('author', 'name picture')
+      .populate({
+        path: 'modules',
+        populate: { path: 'lessons' },
+      });
 
     if (!course) {
       throw new NotFoundException('Courses not found');
@@ -106,6 +112,19 @@ export class CourseService {
 
     if (!course) {
       throw new NotFoundException('Course not found');
+    }
+
+    // if updated slug already exists
+    if (courseData.name) {
+      const newSlug = generateSlug(courseData.name);
+
+      if (newSlug !== slug) {
+        const exists = await this.courseModel.findOne({ slug: newSlug });
+        if (exists) {
+          throw new BadRequestException('Course with this name already exists');
+        }
+        courseData.slug = newSlug;
+      }
     }
 
     // update logic here
