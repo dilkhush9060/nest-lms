@@ -102,7 +102,7 @@ export class TokenGuard implements CanActivate {
     const token = TokenExtractor.fromRequest(request, 'token');
 
     if (!token) {
-      throw new UnauthorizedException('No refresh token found');
+      throw new UnauthorizedException('No token found');
     }
 
     try {

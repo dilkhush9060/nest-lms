@@ -24,6 +24,10 @@ import {
   UnauthorizedDto,
 } from 'src/common/dto/response.dto';
 import {
+  ChangePasswordDto,
+  RefreshTokenResponseDto,
+  ResetPasswordDto,
+  ResetPasswordResponseDto,
   SendOtpDto,
   SendOtpResponseDto,
   SignInDto,
@@ -33,7 +37,7 @@ import {
   VerifyEmailDto,
   VerifyEmailResponseDto,
 } from './auth.dto';
-import { RefreshGuard, TokenGuard } from './auth.guard';
+import { AuthGuard, RefreshGuard, TokenGuard } from './auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -211,7 +215,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh Access Token' })
   @ApiResponse({
     status: 200,
-    description: 'Access token refreshed successfully',
+    type: RefreshTokenResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -273,7 +277,7 @@ export class AuthController {
     type: BadRequestDto,
   })
   @Post('signout')
-  @UseGuards(TokenGuard)
+  @UseGuards(AuthGuard)
   async signOut(
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
@@ -296,6 +300,138 @@ export class AuthController {
     return {
       statusCode: 200,
       message: 'User signed out successfully',
+    };
+  }
+
+  // forget password
+  @ApiOperation({ summary: 'Forget password' })
+  @ApiResponse({
+    status: 200,
+    type: SendOtpResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    type: BadRequestDto,
+  })
+  @Post('forget-password')
+  async forgetPassword(
+    @Body() sendOtpDto: SendOtpDto,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const result = await this.authService.forgetPassword(sendOtpDto.email);
+
+    response.cookie('token', result.token, {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      maxAge: Constants.COOKIE_MAX_AGE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Please check your email!',
+      data: {
+        token: result.token,
+      },
+    };
+  }
+
+  // reset password
+  @ApiOperation({ summary: 'Reset Password' })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: ResetPasswordResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    type: UnauthorizedDto,
+  })
+  @ApiResponse({
+    status: 400,
+    type: BadRequestDto,
+  })
+  @ApiResponse({
+    status: 404,
+    type: NotFoundDto,
+  })
+  @UseGuards(TokenGuard)
+  @Post('reset-password')
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Req() request: express.Request,
+  ) {
+    const token = request.token;
+    const tokenData = request.tokenData as {
+      id: string;
+    };
+
+    if (!token || !tokenData) {
+      throw new UnauthorizedException('Invalid or missing token');
+    }
+
+    await this.authService.resetPassword(
+      token,
+      tokenData,
+      resetPasswordDto.otp,
+      resetPasswordDto.password,
+    );
+    return {
+      statusCode: 200,
+      message: 'Password reset successfully!',
+    };
+  }
+
+  // change password
+  @ApiOperation({ summary: 'Change Password' })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    type: UnauthorizedDto,
+  })
+  @ApiResponse({
+    status: 400,
+    type: BadRequestDto,
+  })
+  @UseGuards(AuthGuard)
+  @Post('change-password')
+  async changePassword(
+    @Req() req: express.Request,
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: express.Response,
+  ) {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    await this.authService.changePassword(
+      userId,
+      changePasswordDto.oldPassword,
+      changePasswordDto.newPassword,
+    );
+
+    res.clearCookie('accessToken', {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+      domain: Constants.COOKIE_DOMAIN,
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: Constants.COOKIE_HTTP_ONLY,
+      secure: Constants.COOKIE_SECURE,
+      sameSite: Constants.COOKIE_SAME_SITE,
+      domain: Constants.COOKIE_DOMAIN,
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Password changed successfully!',
     };
   }
 }

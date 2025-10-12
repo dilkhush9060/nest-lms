@@ -101,6 +101,31 @@ export class VerifyEmailResponseDto {
 
   @ApiProperty({ example: 'Email verified successfully' })
   message: string;
+
+  @ApiProperty({
+    example: {
+      user: {
+        id: '64a7b2f5e1b0c8a1d2e3f4g5',
+        email: 'test@gmail.com',
+        name: 'John Doe',
+        role: 'student',
+      },
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZDgzZDE0NDYwMGJkOWRlN',
+      refreshToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZDgzZDE0NDYwMGJkOWRlN',
+    },
+  })
+  data: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+    };
+    accessToken: string;
+    refreshToken: string;
+  };
 }
 
 export class SignInDto {
@@ -144,4 +169,60 @@ export class SignInResponseDto {
     accessToken: string;
     refreshToken: string;
   };
+}
+
+export class RefreshTokenResponseDto {
+  @ApiProperty({ example: 200 })
+  status: number;
+
+  @ApiProperty({ example: 'Token refreshed successfully' })
+  message: string;
+
+  @ApiProperty({
+    example: {
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZDgzZDE0NDYwMGJkOWRlN',
+      refreshToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZDgzZDE0NDYwMGJkOWRlN',
+    },
+  })
+  data: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: '123456', required: true })
+  @IsString()
+  otp: string;
+
+  @ApiProperty({ example: 'newPassword123', required: true })
+  @IsString()
+  password: string;
+}
+export class ResetPasswordResponseDto {
+  @ApiProperty({ example: 200 })
+  status: number;
+
+  @ApiProperty({ example: 'Password reset successful' })
+  message: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'oldPassword123', required: true })
+  @IsString()
+  oldPassword: string;
+
+  @ApiProperty({ example: 'newPassword123', required: true })
+  @IsString()
+  newPassword: string;
+}
+
+export class ChangePasswordResponseDto {
+  @ApiProperty({ example: 200 })
+  status: number;
+
+  @ApiProperty({ example: 'Password change successful' })
+  message: string;
 }
