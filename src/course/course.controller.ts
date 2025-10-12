@@ -11,6 +11,7 @@ import {
   Request,
   UnauthorizedException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -38,6 +39,8 @@ import { AuthGuard, RolesGuard } from 'src/auth/auth.guard';
 import { Roles } from 'src/auth/role.decorator';
 import { Role } from 'src/user/user.types';
 import { CourseService } from './course.service';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { FilterDto } from 'src/common/dto/filter.dto';
 
 @ApiTags('Course')
 @Controller('courses')
@@ -79,15 +82,20 @@ export class CourseController {
   @ApiResponse({ status: 200, type: GetAllCourseResponseDto })
   @ApiResponse({ status: 404, type: NotFoundDto })
   @Get('/')
-  async getAll() {
-    const result = await this.courseService.getAll();
+  async getAll(
+    @Query() paginationDto: PaginationDto,
+    @Query() filterDto: FilterDto,
+  ) {
+    const result = await this.courseService.getAll(paginationDto, filterDto);
 
     return {
       statusCode: 200,
       message: 'Courses fetched successful',
-      data: {
-        courses: result.courses,
-      },
+      data: result.courses,
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
     };
   }
 

@@ -8,6 +8,10 @@ import { Course } from './course.schema';
 import { Model } from 'mongoose';
 import { ModuleService } from './module/module.service';
 import { CourseDto } from './course.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { FilterDto } from 'src/common/dto/filter.dto';
+import { buildMongoFilter } from 'src/common/utils/filter.utils';
+import { generateSlug } from 'src/common/utils/slug.utils';
 
 @Injectable()
 export class CourseService {
@@ -19,8 +23,10 @@ export class CourseService {
 
   // create a new course
   async create(userID: string, courseDto: CourseDto) {
+    const slug = generateSlug(courseDto.name);
+
     const exists = await this.courseModel.findOne({
-      slug: courseDto.name.toLowerCase(),
+      slug,
     });
 
     if (exists) {
@@ -29,7 +35,7 @@ export class CourseService {
 
     const course = await this.courseModel.create({
       name: courseDto.name,
-      slug: courseDto.name.toLowerCase(),
+      slug: slug,
       author: userID,
       category: courseDto.category,
       desc: courseDto.desc,
@@ -48,11 +54,22 @@ export class CourseService {
   }
 
   // get all course
-  async getAll() {
-    const courses = await this.courseModel
-      .find({})
-      .populate('author', 'name')
-      .populate('category', 'name');
+  async getAll(paginationDto: PaginationDto, filterDto: FilterDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const filter = buildMongoFilter(filterDto);
+
+    const [courses, total] = await Promise.all([
+      this.courseModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .populate('author', 'name picture')
+        .populate('category', 'name'),
+      this.courseModel.countDocuments(),
+    ]);
 
     if (courses.length === 0) {
       throw new NotFoundException('Courses not found');
@@ -60,6 +77,10 @@ export class CourseService {
 
     return {
       courses,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -67,7 +88,7 @@ export class CourseService {
   async getBySlug(slug: string) {
     const course = await this.courseModel
       .findOne({ slug })
-      .populate('author', 'name')
+      .populate('author', 'name picture')
       .populate('category', 'name');
 
     if (!course) {
